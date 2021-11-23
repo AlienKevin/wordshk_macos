@@ -157,7 +157,7 @@ type PrClause = (Clause, Option<String>);
 /// Parse the whole words.hk CSV database into a [Dict]
 fn parse_dict() -> anyhow::Result<Dict> {
     // Build the CSV reader and iterate over each record.
-    let mut rdr = csv::Reader::from_path(".rust/wordshk_apple/wordshk.csv")?;
+    let mut rdr = csv::Reader::from_path("./rust/wordshk_apple/wordshk.csv")?;
     let mut dict: Dict = Vec::new();
     for result in rdr.records() {
         let entry = result?;

@@ -10,3 +10,6 @@ lazy_static = "1.4.0"
 indoc = "1.0"
 anyhow = { version = "1.0.44", features = ["backtrace"] }
 flutter_rust_bridge = "1.6.0"
+
+[lib]
+crate-type = ["cdylib"]
