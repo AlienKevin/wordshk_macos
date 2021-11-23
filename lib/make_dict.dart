@@ -14,7 +14,8 @@ abstract class WordshkTools extends FlutterRustBridgeBase<WordshkToolsWire> {
 
   WordshkTools.raw(WordshkToolsWire inner) : super(inner);
 
-  Future<String> makeDict({dynamic hint});
+  Future<String> makeDict(
+      {required String frontBackMatter, required String csvData, dynamic hint});
 }
 
 // ------------------------- Implementation Details -------------------------
@@ -25,14 +26,31 @@ abstract class WordshkTools extends FlutterRustBridgeBase<WordshkToolsWire> {
 class WordshkToolsImpl extends WordshkTools {
   WordshkToolsImpl.raw(WordshkToolsWire inner) : super.raw(inner);
 
-  Future<String> makeDict({dynamic hint}) =>
+  Future<String> makeDict(
+          {required String frontBackMatter,
+          required String csvData,
+          dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
           debugName: 'make_dict',
-          callFfi: (port) => inner.wire_make_dict(port),
+          callFfi: (port) => inner.wire_make_dict(port,
+              _api2wire_String(frontBackMatter), _api2wire_String(csvData)),
           parseSuccessData: _wire2api_String,
           hint: hint));
 
   // Section: api2wire
+  ffi.Pointer<wire_uint_8_list> _api2wire_String(String raw) {
+    return _api2wire_uint_8_list(utf8.encoder.convert(raw));
+  }
+
+  int _api2wire_u8(int raw) {
+    return raw;
+  }
+
+  ffi.Pointer<wire_uint_8_list> _api2wire_uint_8_list(Uint8List raw) {
+    final ans = inner.new_uint_8_list(raw.length);
+    ans.ref.ptr.asTypedList(raw.length).setAll(0, raw);
+    return ans;
+  }
 
   // Section: api_fill_to_wire
 
@@ -75,17 +93,38 @@ class WordshkToolsWire implements FlutterRustBridgeWireBase {
 
   void wire_make_dict(
     int port,
+    ffi.Pointer<wire_uint_8_list> front_back_matter,
+    ffi.Pointer<wire_uint_8_list> csv_data,
   ) {
     return _wire_make_dict(
       port,
+      front_back_matter,
+      csv_data,
     );
   }
 
-  late final _wire_make_dictPtr =
-      _lookup<ffi.NativeFunction<ffi.Void Function(ffi.Int64)>>(
-          'wire_make_dict');
-  late final _wire_make_dict =
-      _wire_make_dictPtr.asFunction<void Function(int)>();
+  late final _wire_make_dictPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Void Function(ffi.Int64, ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>)>>('wire_make_dict');
+  late final _wire_make_dict = _wire_make_dictPtr.asFunction<
+      void Function(
+          int, ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
+
+  ffi.Pointer<wire_uint_8_list> new_uint_8_list(
+    int len,
+  ) {
+    return _new_uint_8_list(
+      len,
+    );
+  }
+
+  late final _new_uint_8_listPtr = _lookup<
+      ffi.NativeFunction<
+          ffi.Pointer<wire_uint_8_list> Function(
+              ffi.Int32)>>('new_uint_8_list');
+  late final _new_uint_8_list = _new_uint_8_listPtr
+      .asFunction<ffi.Pointer<wire_uint_8_list> Function(int)>();
 
   void free_WireSyncReturnStruct(
     WireSyncReturnStruct val,
@@ -114,6 +153,13 @@ class WordshkToolsWire implements FlutterRustBridgeWireBase {
           'store_dart_post_cobject');
   late final _store_dart_post_cobject = _store_dart_post_cobjectPtr
       .asFunction<void Function(DartPostCObjectFnType)>();
+}
+
+class wire_uint_8_list extends ffi.Struct {
+  external ffi.Pointer<ffi.Uint8> ptr;
+
+  @ffi.Int32()
+  external int len;
 }
 
 typedef DartPostCObjectFnType = ffi.Pointer<

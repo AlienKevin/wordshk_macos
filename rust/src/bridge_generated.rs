@@ -13,20 +13,44 @@ use flutter_rust_bridge::*;
 // Section: wire functions
 
 #[no_mangle]
-pub extern "C" fn wire_make_dict(port: i64) {
+pub extern "C" fn wire_make_dict(
+    port: i64,
+    front_back_matter: *mut wire_uint_8_list,
+    csv_data: *mut wire_uint_8_list,
+) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "make_dict",
             port: Some(port),
             mode: FfiCallMode::Normal,
         },
-        move || move |task_callback| make_dict(),
+        move || {
+            let api_front_back_matter = front_back_matter.wire2api();
+            let api_csv_data = csv_data.wire2api();
+            move |task_callback| make_dict(api_front_back_matter, api_csv_data)
+        },
     )
 }
 
 // Section: wire structs
 
+#[repr(C)]
+#[derive(Clone)]
+pub struct wire_uint_8_list {
+    ptr: *mut u8,
+    len: i32,
+}
+
 // Section: allocate functions
+
+#[no_mangle]
+pub extern "C" fn new_uint_8_list(len: i32) -> *mut wire_uint_8_list {
+    let ans = wire_uint_8_list {
+        ptr: support::new_leak_vec_ptr(Default::default(), len),
+        len,
+    };
+    support::new_leak_box_ptr(ans)
+}
 
 // Section: impl Wire2Api
 
@@ -43,6 +67,28 @@ where
             None
         } else {
             Some(self.wire2api())
+        }
+    }
+}
+
+impl Wire2Api<String> for *mut wire_uint_8_list {
+    fn wire2api(self) -> String {
+        let vec: Vec<u8> = self.wire2api();
+        String::from_utf8_lossy(&vec).into_owned()
+    }
+}
+
+impl Wire2Api<u8> for u8 {
+    fn wire2api(self) -> u8 {
+        self
+    }
+}
+
+impl Wire2Api<Vec<u8>> for *mut wire_uint_8_list {
+    fn wire2api(self) -> Vec<u8> {
+        unsafe {
+            let wrap = support::box_from_leak_ptr(self);
+            support::vec_from_leak_ptr(wrap.ptr, wrap.len)
         }
     }
 }

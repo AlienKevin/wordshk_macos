@@ -155,9 +155,9 @@ struct Eg {
 type PrClause = (Clause, Option<String>);
 
 /// Parse the whole words.hk CSV database into a [Dict]
-fn parse_dict() -> anyhow::Result<Dict> {
+fn parse_dict(csv_data: String) -> anyhow::Result<Dict> {
     // Build the CSV reader and iterate over each record.
-    let mut rdr = csv::Reader::from_path("./rust/wordshk_apple/wordshk.csv")?;
+    let mut rdr = csv::Reader::from_reader(csv_data.as_bytes());
     let mut dict: Dict = Vec::new();
     for result in rdr.records() {
         let entry = result?;
@@ -871,13 +871,7 @@ fn to_yue_lang_name(lang: AltLang) -> String {
 }
 
 /// Convert a [Dict] to Apple Dictionary XML format
-fn to_apple_dict(dict: Dict) -> String {
-    let front_back_matter_filename = "./rust/wordshk_apple/front_back_matter.html";
-    let front_back_matter = fs::read_to_string(front_back_matter_filename).expect(&format!(
-        "Something went wrong when I tried to read {}",
-        front_back_matter_filename
-    ));
-
+fn to_apple_dict(front_back_matter: String, dict: Dict) -> String {
     let header = format!(
         r#"<?xml version="1.0" encoding="UTF-8"?>
 <d:dictionary xmlns="http://www.w3.org/1999/xhtml" xmlns:d="http://www.apple.com/DTDs/DictionaryService-1.0.rng">
@@ -1033,7 +1027,7 @@ fn to_apple_dict(dict: Dict) -> String {
     header.to_string() + &entries + "\n</d:dictionary>\n"
 }
 
-pub fn make_dict() -> anyhow::Result<String> {
-    let dict = parse_dict()?;
-    Ok(to_apple_dict(dict))
+pub fn make_dict(front_back_matter: String, csv_data: String) -> anyhow::Result<String> {
+    let dict = parse_dict(csv_data)?;
+    Ok(to_apple_dict(front_back_matter, dict))
 }

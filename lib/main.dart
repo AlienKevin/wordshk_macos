@@ -1,12 +1,16 @@
 import 'package:flutter/material.dart';
 
 import 'dart:ffi';
+import 'package:flutter/services.dart' show rootBundle;
+import 'package:path_provider/path_provider.dart';
+import 'dart:io';
+import 'package:meta/meta.dart';
+import 'package:sum_types/sum_types.dart';
 
-import 'package:flutter_rust_bridge/flutter_rust_bridge.dart';
 import 'make_dict.dart';
 
 const base = 'wordshk_tools';
-final path = 'lib$base.dylib';
+const path = 'lib$base.dylib';
 late final dylib = DynamicLibrary.open(path);
 late final api = WordshkTools(dylib);
 
@@ -29,6 +33,12 @@ class MyApp extends StatelessWidget {
   }
 }
 
+enum InstallStatus {
+  notInstalled,
+  installing,
+  installed,
+}
+
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key, required this.title}) : super(key: key);
 
@@ -39,6 +49,8 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  InstallStatus _installStatus = InstallStatus.notInstalled;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -49,18 +61,49 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              TextButton(
-                style: TextButton.styleFrom(
-                  primary: Colors.white,
-                  backgroundColor: Colors.blue,
-                ),
-                onPressed: () async {
-                  await api.makeDict();
-                },
-                child: const Text('Install words.hk'),
-              )
+              () {
+                switch (_installStatus) {
+                  case InstallStatus.notInstalled:
+                    return TextButton(
+                      style: TextButton.styleFrom(
+                        primary: Colors.white,
+                        backgroundColor: Colors.blue,
+                      ),
+                      onPressed: () {
+                        setState(() {
+                          _installStatus = InstallStatus.installing;
+                        });
+                        createDict().then((_) => setState(() {
+                              _installStatus = InstallStatus.installed;
+                            }));
+                      },
+                      child: const Text('🚀 Install words.hk'),
+                    );
+                  case InstallStatus.installing:
+                    return const Text(
+                      '🛠 Installing words.hk ...',
+                      textAlign: TextAlign.center,
+                    );
+                  case InstallStatus.installed:
+                    return const Text(
+                      '✅ Installed words.hk',
+                      textAlign: TextAlign.center,
+                    );
+                }
+              }()
             ],
           ),
         ));
   }
+}
+
+Future<File> createDict() async {
+  final csvData = await rootBundle.loadString('assets/wordshk.csv');
+  final frontBackMatter =
+      await rootBundle.loadString('assets/front_back_matter.html');
+  final appDocDir = await getApplicationDocumentsDirectory();
+  String appDocPath = appDocDir.path;
+  final xmlFile = File('$appDocPath/wordshk.xml');
+  return xmlFile.writeAsString(
+      await api.makeDict(csvData: csvData, frontBackMatter: frontBackMatter));
 }
