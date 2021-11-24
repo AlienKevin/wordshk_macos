@@ -17,6 +17,7 @@ pub extern "C" fn wire_make_dict(
     port: i64,
     front_back_matter: *mut wire_uint_8_list,
     csv_data: *mut wire_uint_8_list,
+    output_path: *mut wire_uint_8_list,
 ) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
@@ -27,7 +28,8 @@ pub extern "C" fn wire_make_dict(
         move || {
             let api_front_back_matter = front_back_matter.wire2api();
             let api_csv_data = csv_data.wire2api();
-            move |task_callback| make_dict(api_front_back_matter, api_csv_data)
+            let api_output_path = output_path.wire2api();
+            move |task_callback| make_dict(api_front_back_matter, api_csv_data, api_output_path)
         },
     )
 }
@@ -68,6 +70,13 @@ where
         } else {
             Some(self.wire2api())
         }
+    }
+}
+
+impl Wire2Api<String> for *mut wire_uint_8_list {
+    fn wire2api(self) -> String {
+        let vec: Vec<u8> = self.wire2api();
+        String::from_utf8_lossy(&vec).into_owned()
     }
 }
 

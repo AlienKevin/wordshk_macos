@@ -1032,7 +1032,14 @@ fn to_apple_dict(front_back_matter: String, dict: Dict) -> String {
     header.to_string() + &entries + "\n</d:dictionary>\n"
 }
 
-pub fn make_dict(front_back_matter: Vec<u8>, csv_data: Vec<u8>) -> anyhow::Result<String> {
-    let dict = parse_dict(csv_data)?;
-    Ok(to_apple_dict(String::from_utf8_lossy(&front_back_matter).into(), dict))
+pub fn make_dict(front_back_matter: Vec<u8>, csv_data: Vec<u8>, output_path: String) -> anyhow::Result<i32> {
+    let dict;
+    match parse_dict(csv_data) {
+        Err(err) => { return Err(anyhow!(err)); },
+        Ok(_dict) => { dict = _dict; },
+    }
+    let dict_xml = to_apple_dict(String::from_utf8_lossy(&front_back_matter).into(), dict);
+
+    // write xml to file
+    fs::write(&output_path, dict_xml).map(|_| 0).map_err(|_| anyhow!("Unable to write dictionary XML to {}", output_path))
 }

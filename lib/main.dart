@@ -100,16 +100,15 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 }
 
-Future<File> createDict() async {
+Future<int> createDict() async {
   var csvData = await getGzData("https://words.hk/static/all.csv.gz");
   final frontBackMatter = await getData(
       'https://sourceforge.net/projects/wordshk-apple/files/front_back_matter.html/download');
 
   final appDocDir = await getApplicationDocumentsDirectory();
   String appDocPath = appDocDir.path;
-  final xmlFile = File('$appDocPath/wordshk.xml');
-  return xmlFile.writeAsString(
-      await api.makeDict(csvData: csvData, frontBackMatter: frontBackMatter));
+  final xmlPath = '$appDocPath/wordshk.xml';
+  return await api.makeDict(csvData: csvData, frontBackMatter: frontBackMatter, outputPath: xmlPath);
 }
 
 Future<Uint8List> getGzData(String url) async {

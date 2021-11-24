@@ -14,9 +14,10 @@ abstract class WordshkTools extends FlutterRustBridgeBase<WordshkToolsWire> {
 
   WordshkTools.raw(WordshkToolsWire inner) : super(inner);
 
-  Future<String> makeDict(
+  Future<int> makeDict(
       {required Uint8List frontBackMatter,
       required Uint8List csvData,
+      required String outputPath,
       dynamic hint});
 }
 
@@ -28,20 +29,26 @@ abstract class WordshkTools extends FlutterRustBridgeBase<WordshkToolsWire> {
 class WordshkToolsImpl extends WordshkTools {
   WordshkToolsImpl.raw(WordshkToolsWire inner) : super.raw(inner);
 
-  Future<String> makeDict(
+  Future<int> makeDict(
           {required Uint8List frontBackMatter,
           required Uint8List csvData,
+          required String outputPath,
           dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
           debugName: 'make_dict',
           callFfi: (port) => inner.wire_make_dict(
               port,
               _api2wire_uint_8_list(frontBackMatter),
-              _api2wire_uint_8_list(csvData)),
-          parseSuccessData: _wire2api_String,
+              _api2wire_uint_8_list(csvData),
+              _api2wire_String(outputPath)),
+          parseSuccessData: _wire2api_i32,
           hint: hint));
 
   // Section: api2wire
+  ffi.Pointer<wire_uint_8_list> _api2wire_String(String raw) {
+    return _api2wire_uint_8_list(utf8.encoder.convert(raw));
+  }
+
   int _api2wire_u8(int raw) {
     return raw;
   }
@@ -57,16 +64,8 @@ class WordshkToolsImpl extends WordshkTools {
 }
 
 // Section: wire2api
-String _wire2api_String(dynamic raw) {
-  return raw as String;
-}
-
-int _wire2api_u8(dynamic raw) {
+int _wire2api_i32(dynamic raw) {
   return raw as int;
-}
-
-Uint8List _wire2api_uint_8_list(dynamic raw) {
-  return raw as Uint8List;
 }
 
 // ignore_for_file: camel_case_types, non_constant_identifier_names, avoid_positional_boolean_parameters, annotate_overrides, constant_identifier_names
@@ -95,21 +94,26 @@ class WordshkToolsWire implements FlutterRustBridgeWireBase {
     int port,
     ffi.Pointer<wire_uint_8_list> front_back_matter,
     ffi.Pointer<wire_uint_8_list> csv_data,
+    ffi.Pointer<wire_uint_8_list> output_path,
   ) {
     return _wire_make_dict(
       port,
       front_back_matter,
       csv_data,
+      output_path,
     );
   }
 
   late final _wire_make_dictPtr = _lookup<
       ffi.NativeFunction<
-          ffi.Void Function(ffi.Int64, ffi.Pointer<wire_uint_8_list>,
+          ffi.Void Function(
+              ffi.Int64,
+              ffi.Pointer<wire_uint_8_list>,
+              ffi.Pointer<wire_uint_8_list>,
               ffi.Pointer<wire_uint_8_list>)>>('wire_make_dict');
   late final _wire_make_dict = _wire_make_dictPtr.asFunction<
-      void Function(
-          int, ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
+      void Function(int, ffi.Pointer<wire_uint_8_list>,
+          ffi.Pointer<wire_uint_8_list>, ffi.Pointer<wire_uint_8_list>)>();
 
   ffi.Pointer<wire_uint_8_list> new_uint_8_list(
     int len,
