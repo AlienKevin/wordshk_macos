@@ -3,10 +3,12 @@ use lazy_static::lazy_static;
 use lip::ParseResult;
 use lip::*;
 use std::collections::HashSet;
-use std::error::Error;
 use std::fs;
-
+use std::io::prelude::*;
+use flate2::read::GzDecoder;
+use futures::executor::block_on;
 use anyhow::{anyhow};
+use tokio_compat_02::FutureExt;
 
 /// A dictionary is a list of entries
 type Dict = Vec<Entry>;
@@ -155,17 +157,12 @@ struct Eg {
 type PrClause = (Clause, Option<String>);
 
 /// Parse the whole words.hk CSV database into a [Dict]
-fn parse_dict(csv_data: Vec<u8>) -> anyhow::Result<Dict> {
+fn parse_dict(csv_data: &str) -> anyhow::Result<Dict> {
     // Build the CSV reader and iterate over each record.
-    let csv_data_array: &[u8] = &csv_data;
-    let mut rdr = csv::Reader::from_reader(csv_data_array);
+    let mut rdr = csv::Reader::from_reader(csv_data.as_bytes());
     let mut dict: Dict = Vec::new();
     for record in rdr.records() {
-        let entry;
-        match record {
-            Err(_) => { continue; }
-            Ok(record) => { entry = record; }
-        }
+        let entry = record?;
         if &entry[4] == "OK" {
             let id: usize = entry[0].parse().unwrap();
             let head = &entry[1];
@@ -1032,14 +1029,27 @@ fn to_apple_dict(front_back_matter: String, dict: Dict) -> String {
     header.to_string() + &entries + "\n</d:dictionary>\n"
 }
 
-pub fn make_dict(front_back_matter: Vec<u8>, csv_data: Vec<u8>, output_path: String) -> anyhow::Result<i32> {
-    let dict;
-    match parse_dict(csv_data) {
-        Err(err) => { return Err(anyhow!(err)); },
-        Ok(_dict) => { dict = _dict; },
-    }
-    let dict_xml = to_apple_dict(String::from_utf8_lossy(&front_back_matter).into(), dict);
+pub fn make_dict(output_path: String) -> anyhow::Result<i32> {
+    block_on(async {
+        let csv_url = "https://words.hk/static/all.csv.gz";
+        let csv_gz_data = reqwest::get(csv_url).compat().await?.bytes().compat().await?;
+        let mut gz = GzDecoder::new(&csv_gz_data[..]);
+        let mut csv_data = String::new();
+        gz.read_to_string(&mut csv_data)?;
+        let csv_data_remove_first_line = csv_data.get(csv_data.find('\n').unwrap()+1..).unwrap();
+        let csv_data_remove_two_lines = csv_data_remove_first_line.get(csv_data_remove_first_line.find('\n').unwrap()+1..).unwrap();
 
-    // write xml to file
-    fs::write(&output_path, dict_xml).map(|_| 0).map_err(|_| anyhow!("Unable to write dictionary XML to {}", output_path))
+        let dict;
+        match parse_dict(csv_data_remove_two_lines) {
+            Err(err) => { return Err(anyhow!(err)); },
+            Ok(_dict) => { dict = _dict; },
+        }
+
+        let front_back_matter_url = "https://sourceforge.net/projects/wordshk-apple/files/front_back_matter.html/download";
+        let front_back_matter_data = reqwest::get(front_back_matter_url).compat().await?.text().compat().await?;
+        let dict_xml = to_apple_dict(front_back_matter_data, dict);
+
+        // write xml to file
+        fs::write(&output_path, dict_xml).map(|_| 0).map_err(|_| anyhow!("Unable to write dictionary XML to {}", output_path))
+    })
 }
