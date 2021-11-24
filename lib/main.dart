@@ -6,6 +6,9 @@ import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:meta/meta.dart';
 import 'package:sum_types/sum_types.dart';
+import 'package:http/http.dart' as http;
+import 'package:archive/archive.dart';
+import 'dart:typed_data';
 
 import 'make_dict.dart';
 
@@ -98,12 +101,23 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 Future<File> createDict() async {
-  final csvData = await rootBundle.loadString('assets/wordshk.csv');
-  final frontBackMatter =
-      await rootBundle.loadString('assets/front_back_matter.html');
+  var csvData = await getGzData("https://words.hk/static/all.csv.gz");
+  final frontBackMatter = await getData(
+      'https://sourceforge.net/projects/wordshk-apple/files/front_back_matter.html/download');
+
   final appDocDir = await getApplicationDocumentsDirectory();
   String appDocPath = appDocDir.path;
   final xmlFile = File('$appDocPath/wordshk.xml');
   return xmlFile.writeAsString(
       await api.makeDict(csvData: csvData, frontBackMatter: frontBackMatter));
+}
+
+Future<Uint8List> getGzData(String url) async {
+  var req = await http.Client().get(Uri.parse(url));
+  return Uint8List.fromList(GZipDecoder().decodeBytes(req.bodyBytes));
+}
+
+Future<Uint8List> getData(String url) async {
+  var req = await http.Client().get(Uri.parse(url));
+  return req.bodyBytes;
 }

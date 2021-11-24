@@ -71,13 +71,6 @@ where
     }
 }
 
-impl Wire2Api<String> for *mut wire_uint_8_list {
-    fn wire2api(self) -> String {
-        let vec: Vec<u8> = self.wire2api();
-        String::from_utf8_lossy(&vec).into_owned()
-    }
-}
-
 impl Wire2Api<u8> for u8 {
     fn wire2api(self) -> u8 {
         self

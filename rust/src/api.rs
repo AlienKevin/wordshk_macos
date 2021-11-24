@@ -155,12 +155,17 @@ struct Eg {
 type PrClause = (Clause, Option<String>);
 
 /// Parse the whole words.hk CSV database into a [Dict]
-fn parse_dict(csv_data: String) -> anyhow::Result<Dict> {
+fn parse_dict(csv_data: Vec<u8>) -> anyhow::Result<Dict> {
     // Build the CSV reader and iterate over each record.
-    let mut rdr = csv::Reader::from_reader(csv_data.as_bytes());
+    let csv_data_array: &[u8] = &csv_data;
+    let mut rdr = csv::Reader::from_reader(csv_data_array);
     let mut dict: Dict = Vec::new();
-    for result in rdr.records() {
-        let entry = result?;
+    for record in rdr.records() {
+        let entry;
+        match record {
+            Err(_) => { continue; }
+            Ok(record) => { entry = record; }
+        }
         if &entry[4] == "OK" {
             let id: usize = entry[0].parse().unwrap();
             let head = &entry[1];
@@ -1027,7 +1032,7 @@ fn to_apple_dict(front_back_matter: String, dict: Dict) -> String {
     header.to_string() + &entries + "\n</d:dictionary>\n"
 }
 
-pub fn make_dict(front_back_matter: String, csv_data: String) -> anyhow::Result<String> {
+pub fn make_dict(front_back_matter: Vec<u8>, csv_data: Vec<u8>) -> anyhow::Result<String> {
     let dict = parse_dict(csv_data)?;
-    Ok(to_apple_dict(front_back_matter, dict))
+    Ok(to_apple_dict(String::from_utf8_lossy(&front_back_matter).into(), dict))
 }

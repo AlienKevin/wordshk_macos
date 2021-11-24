@@ -15,7 +15,9 @@ abstract class WordshkTools extends FlutterRustBridgeBase<WordshkToolsWire> {
   WordshkTools.raw(WordshkToolsWire inner) : super(inner);
 
   Future<String> makeDict(
-      {required String frontBackMatter, required String csvData, dynamic hint});
+      {required Uint8List frontBackMatter,
+      required Uint8List csvData,
+      dynamic hint});
 }
 
 // ------------------------- Implementation Details -------------------------
@@ -27,21 +29,19 @@ class WordshkToolsImpl extends WordshkTools {
   WordshkToolsImpl.raw(WordshkToolsWire inner) : super.raw(inner);
 
   Future<String> makeDict(
-          {required String frontBackMatter,
-          required String csvData,
+          {required Uint8List frontBackMatter,
+          required Uint8List csvData,
           dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
           debugName: 'make_dict',
-          callFfi: (port) => inner.wire_make_dict(port,
-              _api2wire_String(frontBackMatter), _api2wire_String(csvData)),
+          callFfi: (port) => inner.wire_make_dict(
+              port,
+              _api2wire_uint_8_list(frontBackMatter),
+              _api2wire_uint_8_list(csvData)),
           parseSuccessData: _wire2api_String,
           hint: hint));
 
   // Section: api2wire
-  ffi.Pointer<wire_uint_8_list> _api2wire_String(String raw) {
-    return _api2wire_uint_8_list(utf8.encoder.convert(raw));
-  }
-
   int _api2wire_u8(int raw) {
     return raw;
   }
