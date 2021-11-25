@@ -6,9 +6,7 @@ use std::collections::HashSet;
 use std::fs;
 use std::io::prelude::*;
 use flate2::read::GzDecoder;
-use futures::executor::block_on;
 use anyhow::{anyhow};
-use tokio_compat_02::FutureExt;
 use tar::Archive;
 
 /// A dictionary is a list of entries
@@ -1030,48 +1028,47 @@ fn to_apple_dict(front_back_matter: String, dict: Dict) -> String {
     header.to_string() + &entries + "\n</d:dictionary>\n"
 }
 
-pub fn make_dict(output_dir: String) -> anyhow::Result<i32> {
-    block_on(async {
-        let csv_url = "https://words.hk/static/all.csv.gz";
-        let csv_gz_data = reqwest::get(csv_url).compat().await?.bytes().compat().await?;
-        println!("Downloaded CSV data");
-        let mut gz = GzDecoder::new(&csv_gz_data[..]);
-        let mut csv_data = String::new();
-        gz.read_to_string(&mut csv_data)?;
-        println!("Decompressed CSV data");
-        let csv_data_remove_first_line = csv_data.get(csv_data.find('\n').unwrap()+1..).unwrap();
-        let csv_data_remove_two_lines = csv_data_remove_first_line.get(csv_data_remove_first_line.find('\n').unwrap()+1..).unwrap();
-        println!("Cleaned CSV data");
+#[tokio::main(flavor = "current_thread")]
+pub async fn make_dict(output_dir: String) -> anyhow::Result<i32> {
+    let csv_url = "https://words.hk/static/all.csv.gz";
+    let csv_gz_data = reqwest::get(csv_url).await?.bytes().await?;
+    println!("Downloaded CSV data");
+    let mut gz = GzDecoder::new(&csv_gz_data[..]);
+    let mut csv_data = String::new();
+    gz.read_to_string(&mut csv_data)?;
+    println!("Decompressed CSV data");
+    let csv_data_remove_first_line = csv_data.get(csv_data.find('\n').unwrap()+1..).unwrap();
+    let csv_data_remove_two_lines = csv_data_remove_first_line.get(csv_data_remove_first_line.find('\n').unwrap()+1..).unwrap();
+    println!("Cleaned CSV data");
 
-        let dict;
-        match parse_dict(csv_data_remove_two_lines) {
-            Err(err) => { return Err(anyhow!(err)); },
-            Ok(_dict) => { dict = _dict; },
-        }
+    let dict;
+    match parse_dict(csv_data_remove_two_lines) {
+        Err(err) => { return Err(anyhow!(err)); },
+        Ok(_dict) => { dict = _dict; },
+    }
         
-        println!("Parsed CSV data");
+    println!("Parsed CSV data");
 
-        let wordshk_url = "https://sourceforge.net/projects/wordshk-apple/files/meta.tar.gz/download";
-        let wordshk_data_tar_gz = reqwest::get(wordshk_url).compat().await?.bytes().compat().await?;
-        println!("Downloaded other dictionary files");
-        let wordshk_data_tar = GzDecoder::new(&wordshk_data_tar_gz[..]);
-        let mut archive = Archive::new(wordshk_data_tar);
-        println!("Decompressing files to {}...", output_dir);
-        archive.unpack(&output_dir)?;
-        println!("Decompressed files to {}...", output_dir);
+    let wordshk_url = "https://sourceforge.net/projects/wordshk-apple/files/meta.tar.gz/download";
+    let wordshk_data_tar_gz = reqwest::get(wordshk_url).await?.bytes().await?;
+    println!("Downloaded other dictionary files");
+    let wordshk_data_tar = GzDecoder::new(&wordshk_data_tar_gz[..]);
+    let mut archive = Archive::new(wordshk_data_tar);
+    println!("Decompressing files to {}...", output_dir);
+    archive.unpack(&output_dir)?;
+    println!("Decompressed files to {}...", output_dir);
 
-        let front_back_matter_path = output_dir.clone() + "/front_back_matter.html";
-        println!("Loaded front back matter from {}", front_back_matter_path);
-        let front_back_matter = fs::read_to_string(front_back_matter_path)?;
-        println!("Loaded front back matter");
+    let front_back_matter_path = output_dir.clone() + "/front_back_matter.html";
+    println!("Loaded front back matter from {}", front_back_matter_path);
+    let front_back_matter = fs::read_to_string(front_back_matter_path)?;
+    println!("Loaded front back matter");
 
-        let dict_xml = to_apple_dict(front_back_matter, dict);
+    let dict_xml = to_apple_dict(front_back_matter, dict);
 
-        println!("Converted Dict to XML");
+    println!("Converted Dict to XML");
 
-        // write xml to file
-        let xml_path = output_dir + "/wordshk.xml";
-        println!("Writing XML to {}", xml_path);
-        fs::write(&xml_path, dict_xml).map(|_| 0).map_err(|_| anyhow!("Unable to write dictionary XML to {}", xml_path))
-    })
+    // write xml to file
+    let xml_path = output_dir + "/wordshk.xml";
+    println!("Writing XML to {}", xml_path);
+    fs::write(&xml_path, dict_xml).map(|_| 0).map_err(|_| anyhow!("Unable to write dictionary XML to {}", xml_path))
 }
