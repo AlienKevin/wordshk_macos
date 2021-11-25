@@ -16,6 +16,7 @@ const base = 'wordshk_tools';
 const path = 'lib$base.dylib';
 late final dylib = DynamicLibrary.open(path);
 late final api = WordshkTools(dylib);
+String appDirPath = "";
 
 void main() {
   runApp(const MyApp());
@@ -78,6 +79,7 @@ class _MyHomePageState extends State<MyHomePage> {
                         });
                         createDict().then((_) => setState(() {
                               _installStatus = InstallStatus.installed;
+                              installDict();
                             }));
                       },
                       child: const Text('🚀 Install words.hk'),
@@ -101,8 +103,36 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 Future<int> createDict() async {
-  final appDocDir = await getApplicationDocumentsDirectory();
-  String appDocPath = appDocDir.path;
-  return await api.makeDict(outputDir: appDocPath);
+  final appDir = await getApplicationDocumentsDirectory();
+  appDirPath = appDir.path;
+  return await api.makeDict(outputDir: appDirPath);
 }
 
+Future<void> installDict() async {
+  final dictDevKitDir = appDirPath + '/dict_dev_kit/';
+  // Needs to download Dictionary Development Kit first
+  if (!await Directory(dictDevKitDir).exists()) {
+    const dictDevKitUrl =
+        'https://sourceforge.net/projects/wordshk-apple/files/dict_dev_kit.tar.gz/download';
+    var req = await http.Client().get(Uri.parse(dictDevKitUrl));
+    final dictDevKit =
+        TarDecoder().decodeBytes(GZipDecoder().decodeBytes(req.bodyBytes));
+    for (final file in dictDevKit) {
+      final filename = file.name;
+      if (file.isFile) {
+        print('Decompressing to ' + filename + '...');
+        final data = file.content as List<int>;
+        File(dictDevKitDir + filename)
+          ..createSync(recursive: true)
+          ..writeAsBytesSync(data);
+      } else {
+        print('Decompressing to ' + filename + '/ ...');
+        Directory(dictDevKitDir + filename).create(recursive: true);
+      }
+    }
+  }
+  print('Loaded Dictionary Development Kit');
+  await Process.run('make', [], workingDirectory: appDirPath);
+  await Process.run('make', ['install'], workingDirectory: appDirPath);
+  print('Installed dictionary to ~/Library/Dictionaries');
+}
