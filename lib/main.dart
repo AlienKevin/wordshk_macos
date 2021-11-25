@@ -30,8 +30,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'words.hk macOS manager',
       theme: ThemeData(
-        primarySwatch: Colors.blue,
-      ),
+          primarySwatch: Colors.blue,
+          textTheme: const TextTheme(bodyText2: TextStyle(fontSize: 18.0)),
+          ),
       home: const MyHomePage(title: 'words.hk macOS manager'),
     );
   }
@@ -57,6 +58,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
+    final ButtonStyle style = ElevatedButton.styleFrom(textStyle: const TextStyle(fontSize: 20), padding: const EdgeInsets.all(25));
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
@@ -68,11 +70,8 @@ class _MyHomePageState extends State<MyHomePage> {
               () {
                 switch (_installStatus) {
                   case InstallStatus.notInstalled:
-                    return TextButton(
-                      style: TextButton.styleFrom(
-                        primary: Colors.white,
-                        backgroundColor: Colors.blue,
-                      ),
+                    return ElevatedButton(
+                      style: style,
                       onPressed: () {
                         setState(() {
                           _installStatus = InstallStatus.installing;
