@@ -30,9 +30,9 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'words.hk macOS manager',
       theme: ThemeData(
-          primarySwatch: Colors.blue,
-          textTheme: const TextTheme(bodyText2: TextStyle(fontSize: 18.0)),
-          ),
+        primarySwatch: Colors.blue,
+        textTheme: const TextTheme(bodyText2: TextStyle(fontSize: 20.0)),
+      ),
       home: const MyHomePage(title: 'words.hk macOS manager'),
     );
   }
@@ -40,7 +40,8 @@ class MyApp extends StatelessWidget {
 
 enum InstallStatus {
   notInstalled,
-  installing,
+  creatingDict,
+  installingDict,
   installed,
 }
 
@@ -58,7 +59,9 @@ class _MyHomePageState extends State<MyHomePage> {
 
   @override
   Widget build(BuildContext context) {
-    final ButtonStyle style = ElevatedButton.styleFrom(textStyle: const TextStyle(fontSize: 20), padding: const EdgeInsets.all(25));
+    final ButtonStyle style = ElevatedButton.styleFrom(
+        textStyle: const TextStyle(fontSize: 20),
+        padding: const EdgeInsets.all(25));
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
@@ -67,38 +70,52 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
+              Image.asset('assets/logo_wide.png'),
+              const SizedBox(
+                height: 25,
+              ),
               () {
                 switch (_installStatus) {
                   case InstallStatus.notInstalled:
                     return ElevatedButton(
                       style: style,
-                      onPressed: () {
+                      onPressed: () async {
                         setState(() {
-                          _installStatus = InstallStatus.installing;
+                          _installStatus = InstallStatus.creatingDict;
                         });
-                        createDict().then((_) => setState(() {
-                              _installStatus = InstallStatus.installed;
-                              installDict();
-                            }));
+                        await createDict();
+                        setState(() {
+                          _installStatus = InstallStatus.installingDict;
+                        });
+                        await installDict();
+                        setState(() {
+                          _installStatus = InstallStatus.installed;
+                        });
                       },
                       child: const Text('🚀 Install words.hk'),
                     );
-                  case InstallStatus.installing:
-                    return const Text(
-                      '🛠 Installing words.hk ...',
-                      textAlign: TextAlign.center,
-                    );
+                  case InstallStatus.creatingDict:
+                    return textStatus(
+                        '🛠 Creating dictionary with latest data ...');
+                  case InstallStatus.installingDict:
+                    return textStatus('⚙️ Installing dictionary ...');
                   case InstallStatus.installed:
-                    return const Text(
-                      '✅ Installed words.hk',
-                      textAlign: TextAlign.center,
-                    );
+                    return textStatus('✅ Installed words.hk');
                 }
-              }()
+              }(),
             ],
           ),
         ));
   }
+}
+
+textStatus(String text) {
+  return Padding(
+      padding: const EdgeInsets.all(25),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+      ));
 }
 
 Future<int> createDict() async {
