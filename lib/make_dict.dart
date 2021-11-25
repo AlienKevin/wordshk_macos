@@ -14,7 +14,7 @@ abstract class WordshkTools extends FlutterRustBridgeBase<WordshkToolsWire> {
 
   WordshkTools.raw(WordshkToolsWire inner) : super(inner);
 
-  Future<int> makeDict({required String outputPath, dynamic hint});
+  Future<int> makeDict({required String outputDir, dynamic hint});
 }
 
 // ------------------------- Implementation Details -------------------------
@@ -25,11 +25,11 @@ abstract class WordshkTools extends FlutterRustBridgeBase<WordshkToolsWire> {
 class WordshkToolsImpl extends WordshkTools {
   WordshkToolsImpl.raw(WordshkToolsWire inner) : super.raw(inner);
 
-  Future<int> makeDict({required String outputPath, dynamic hint}) =>
+  Future<int> makeDict({required String outputDir, dynamic hint}) =>
       executeNormal(FlutterRustBridgeTask(
           debugName: 'make_dict',
           callFfi: (port) =>
-              inner.wire_make_dict(port, _api2wire_String(outputPath)),
+              inner.wire_make_dict(port, _api2wire_String(outputDir)),
           parseSuccessData: _wire2api_i32,
           hint: hint));
 
@@ -81,11 +81,11 @@ class WordshkToolsWire implements FlutterRustBridgeWireBase {
 
   void wire_make_dict(
     int port,
-    ffi.Pointer<wire_uint_8_list> output_path,
+    ffi.Pointer<wire_uint_8_list> output_dir,
   ) {
     return _wire_make_dict(
       port,
-      output_path,
+      output_dir,
     );
   }
 

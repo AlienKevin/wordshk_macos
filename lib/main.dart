@@ -103,7 +103,6 @@ class _MyHomePageState extends State<MyHomePage> {
 Future<int> createDict() async {
   final appDocDir = await getApplicationDocumentsDirectory();
   String appDocPath = appDocDir.path;
-  final xmlPath = '$appDocPath/wordshk.xml';
-  return await api.makeDict(outputPath: xmlPath);
+  return await api.makeDict(outputDir: appDocPath);
 }
 

@@ -13,7 +13,7 @@ use flutter_rust_bridge::*;
 // Section: wire functions
 
 #[no_mangle]
-pub extern "C" fn wire_make_dict(port: i64, output_path: *mut wire_uint_8_list) {
+pub extern "C" fn wire_make_dict(port: i64, output_dir: *mut wire_uint_8_list) {
     FLUTTER_RUST_BRIDGE_HANDLER.wrap(
         WrapInfo {
             debug_name: "make_dict",
@@ -21,8 +21,8 @@ pub extern "C" fn wire_make_dict(port: i64, output_path: *mut wire_uint_8_list) 
             mode: FfiCallMode::Normal,
         },
         move || {
-            let api_output_path = output_path.wire2api();
-            move |task_callback| make_dict(api_output_path)
+            let api_output_dir = output_dir.wire2api();
+            move |task_callback| make_dict(api_output_dir)
         },
     )
 }
