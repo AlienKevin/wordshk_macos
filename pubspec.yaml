@@ -18,6 +18,11 @@ dependencies:
   path_provider: ^2.0.7
   sum_types: ^0.3.0
 
+  flutter_launcher_icons:
+   git:
+    url: https://github.com/dirkbo/flutter_launcher_icons.git
+    ref: 5281519dd71aac8e5f37ebc0fe44b994677b567f
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
@@ -26,3 +31,7 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+
+flutter_icons:
+  macos: true
+  image_path: "assets/logo.png"
